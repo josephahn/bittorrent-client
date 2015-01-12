@@ -1,0 +1,9 @@
+{
+  "name": "bittorrent-client",
+  "version": "0.0.1",
+  "description": "A simple bittorrent client using node.js",
+  "dependencies": {
+    "bencode": "~0.6.0",
+    "request": "~2.51.0"
+  }
+}
