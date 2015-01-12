@@ -11,4 +11,4 @@ function decode(fileName) {
   });
 }
 
-decode('./pc.torrent');
+decode('./test.torrent');
