@@ -7,17 +7,24 @@ var request = require('request');
 function decode(fileName) {
   var information = bencode.decode(fs.readFileSync(fileName));
   return {
+    announce: information.announce,
     announceList: information['announce-list'],
     info: information.info
   };
 }
 
 // return first http tracker
-function findTracker(list) {
-  for (var i = 0; i < list.length; i++) {
-    var item = list[i];
-    if (item[0].toString('utf8').search(/^http/) === 0) {
-      return item[0].toString('utf8');
+function findTracker(info) {
+  if (info.announce.toString('utf8').search(/^http/) === 0) {
+    return info.announce.toString('utf8');
+  }
+  var list = info['announceList'];
+  if (list) {
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i];
+      if (item[0].toString('utf8').search(/^http/) === 0) {
+        return item[0].toString('utf8');
+      }
     }
   }
 }
@@ -66,7 +73,7 @@ function urlEncodeHex(str) {
 
 var decodedInfo = decode('test.torrent');
 var info = decodedInfo.info;
-var trackerUrl = findTracker(decodedInfo.announceList);
+var trackerUrl = findTracker(decodedInfo);
 
 // var url = trackerUrl + '?' + qs.stringify(getRequestParams(info));
 var url = trackerUrl +
