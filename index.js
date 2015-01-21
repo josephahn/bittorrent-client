@@ -83,13 +83,17 @@ var url = trackerUrl +
                        // '&peer_id=' + encodeURI(makePeerId()) +
                        '&port=' + '6881' +
                        '&uploaded=0' + 
-                       '&downloaded=0' +
+                       '&downloaded=1' +
+                       // '&left=99' +
                        '&left=' + decode('test.torrent').info.length +
                        '&compact=1' +
+                       '&no_peer_id=1' +
                        '&event=' + 'started';
 
-
-request(url, function (error, response, body) {
+request({
+  url: url,
+  encoding: null
+  }, function (error, response, body) {
   console.log(' # # # # # # # # # # # # # # # # # # # # # # # # REQUEST')
   console.log(' >>>>> URL');
   console.log(url);
@@ -98,5 +102,5 @@ request(url, function (error, response, body) {
   console.log('>>> RESPONSE:');
   console.log(response.statusCode);
   console.log('>>> BODY:');
-  console.log(body);
+  console.log(bencode.decode(body));
 });
