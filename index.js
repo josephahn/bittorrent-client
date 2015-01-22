@@ -32,11 +32,11 @@ function findTracker(info) {
 
 function getRequestParams(info) {
 
-  var sha1Hash = sha1(bencode.encode(info)).toString('hex');
-  var urlEncodedHash = urlEncodeHex(sha1Hash);
+  var sha1Hash = sha1(bencode.encode(info));
+  // var urlEncodedHash = urlEncodeHex(sha1Hash);
 
   var params = {
-    info_hash: urlEncodedHash,
+    info_hash: sha1Hash,
     peer_id: encodeURI(makePeerId()),
     port: 6881,
     uploaded: 0,
@@ -92,7 +92,7 @@ var trackerUrl = findTracker(decodedInfo);
 // var url = trackerUrl + '?' + qs.stringify(getRequestParams(info));
 var url = trackerUrl +
                        // '?info_hash=' + '%9a%dc%97T%22%0c%b9%cd%7d%3c4%8d%0b%bf%ae%7b%2c%e8%fc%84' +
-                       '?info_hash=' + getRequestParams(info).info_hash +
+                       '?info_hash=' + urlEncodeHex(getRequestParams(info).info_hash.toString('hex')) +
                        '&peer_id=' + '-UM1860-A%8e%8b%06%a02%1e%40%25%5b%e0P' +
                        // '&peer_id=' + encodeURI(makePeerId()) +
                        '&port=' + '6881' +
@@ -118,5 +118,32 @@ request({
   // console.log('>>> BODY:');
   // console.log(bencode.decode(body));
   var peersArr = getPeers(body);
-  console.log(peersArr);
+  var peer = peersArr[0];
+  var client = net.connect({
+    port: peer.port, host: peer.ip
+  }, function() {
+    console.log('connected to server!');
+    var pstrlen = new Buffer([19]);
+    var pstr = new Buffer('BitTorrent protocol');
+    var reserved = new Buffer([0, 0, 0, 0, 0, 0, 0, 0]);
+    var info_hash = getRequestParams(info).info_hash;
+    var peer_id = makePeerId();
+    var handShake = Buffer.concat([pstrlen, pstr, reserved, info_hash, peer_id]);
+    console.log(handShake);
+    client.write(handShake);
+  });
+  client.on('error', function(error) {
+    console.log('ERROR');
+    console.log(error);
+  });
+  client.on('timeout', function() {
+    console.log('timeout');
+  });
+  client.on('data', function(data) {
+    console.log(data.toString());
+    client.end();
+  });
+  client.on('end', function() {
+    console.log('disconnected from server');
+  });
 });
