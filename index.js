@@ -3,6 +3,7 @@ var fs = require('fs');
 var crypto = require('crypto');
 var qs = require('querystring');
 var request = require('request');
+var net = require('net');
 
 function decode(fileName) {
   var information = bencode.decode(fs.readFileSync(fileName));
@@ -40,7 +41,7 @@ function getRequestParams(info) {
     port: 6881,
     uploaded: 0,
     downloaded: 0,
-    left: decode('test.torrent').info.length,
+    left: decode('linux.torrent').info.length,
     compact: 1,
     event: 'started'
   };
@@ -69,9 +70,22 @@ function urlEncodeHex(str) {
   return result;
 }
 
+function getPeers(response) {
+  var decoded = bencode.decode(response);
+  var peersBuf = decoded.peers;
+  var peersLen = peersBuf.length;
+  var peersArr = [];
+  for (var i = 0; i < peersLen; i += 6) {
+    var ip = [peersBuf.readUInt8(i), peersBuf.readUInt8(i + 1), peersBuf.readUInt8(i + 2), peersBuf.readUInt8(i + 3)].join('.');
+    var port = peersBuf.readUInt16BE(i + 4);
+    peersArr.push({ip: ip, port: port});
+  }
+  return peersArr;
+}
 
 
-var decodedInfo = decode('test.torrent');
+
+var decodedInfo = decode('linux.torrent');
 var info = decodedInfo.info;
 var trackerUrl = findTracker(decodedInfo);
 
@@ -85,7 +99,7 @@ var url = trackerUrl +
                        '&uploaded=0' + 
                        '&downloaded=1' +
                        // '&left=99' +
-                       '&left=' + decode('test.torrent').info.length +
+                       '&left=' + decode('linux.torrent').info.length +
                        '&compact=1' +
                        '&no_peer_id=1' +
                        '&event=' + 'started';
@@ -94,13 +108,15 @@ request({
   url: url,
   encoding: null
   }, function (error, response, body) {
-  console.log(' # # # # # # # # # # # # # # # # # # # # # # # # REQUEST')
-  console.log(' >>>>> URL');
-  console.log(url);
-  console.log('>>> ERROR:');
-  console.log(error);
-  console.log('>>> RESPONSE:');
-  console.log(response.statusCode);
-  console.log('>>> BODY:');
-  console.log(bencode.decode(body));
+  // console.log(' # # # # # # # # # # # # # # # # # # # # # # # # REQUEST')
+  // console.log(' >>>>> URL');
+  // console.log(url);
+  // console.log('>>> ERROR:');
+  // console.log(error);
+  // console.log('>>> RESPONSE:');
+  // console.log(response.statusCode);
+  // console.log('>>> BODY:');
+  // console.log(bencode.decode(body));
+  var peersArr = getPeers(body);
+  console.log(peersArr);
 });
