@@ -70,8 +70,8 @@ function urlEncodeHex(str) {
   return result;
 }
 
-function getPeers(response) {
-  var decoded = bencode.decode(response);
+function getPeers(info) {
+  var decoded = bencode.decode(info);
   var peersBuf = decoded.peers;
   var peersLen = peersBuf.length;
   var peersArr = [];
@@ -83,7 +83,37 @@ function getPeers(response) {
   return peersArr;
 }
 
-
+function connectPeers(info) {
+  var peersArr = getPeers(info);
+  var peer = peersArr[0];
+  var client = net.connect({
+    port: peer.port, host: peer.ip
+  }, function() {
+    console.log('connected to server!');
+    var pstrlen = new Buffer([19]);
+    var pstr = new Buffer('BitTorrent protocol');
+    var reserved = new Buffer([0, 0, 0, 0, 0, 0, 0, 0]);
+    var info_hash = getRequestParams(info).info_hash;
+    var peer_id = makePeerId();
+    var handShake = Buffer.concat([pstrlen, pstr, reserved, info_hash, peer_id]);
+    console.log(handShake);
+    client.write(handShake);
+  });
+  client.on('error', function(error) {
+    console.log('ERROR');
+    console.log(error);
+  });
+  client.on('timeout', function() {
+    console.log('timeout');
+  });
+  client.on('data', function(data) {
+    console.log(data.toString());
+    client.end();
+  });
+  client.on('end', function() {
+    console.log('disconnected from server');
+  });
+}
 
 var decodedInfo = decode('linux.torrent');
 var info = decodedInfo.info;
@@ -117,33 +147,5 @@ request({
   // console.log(response.statusCode);
   // console.log('>>> BODY:');
   // console.log(bencode.decode(body));
-  var peersArr = getPeers(body);
-  var peer = peersArr[0];
-  var client = net.connect({
-    port: peer.port, host: peer.ip
-  }, function() {
-    console.log('connected to server!');
-    var pstrlen = new Buffer([19]);
-    var pstr = new Buffer('BitTorrent protocol');
-    var reserved = new Buffer([0, 0, 0, 0, 0, 0, 0, 0]);
-    var info_hash = getRequestParams(info).info_hash;
-    var peer_id = makePeerId();
-    var handShake = Buffer.concat([pstrlen, pstr, reserved, info_hash, peer_id]);
-    console.log(handShake);
-    client.write(handShake);
-  });
-  client.on('error', function(error) {
-    console.log('ERROR');
-    console.log(error);
-  });
-  client.on('timeout', function() {
-    console.log('timeout');
-  });
-  client.on('data', function(data) {
-    console.log(data.toString());
-    client.end();
-  });
-  client.on('end', function() {
-    console.log('disconnected from server');
-  });
+  connectPeers(body);
 });
